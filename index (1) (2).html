@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hapag – Food Finder</title>
+  <style>
+    :root {
+      --bg: #fbf7f0;
+      --text: #2b2420;
+      --muted: #6f655d;
+      --accent: #1f6f5c;
+      --accent-dark: #155244;
+      --accent-soft: #e3f2ed;
+      --gold: #f2b84b;
+      --card: #ffffff;
+      --line: #e6ddd0;
+      --tile: #e9dfcc;
+      --shadow: 0 6px 18px rgba(43, 36, 32, 0.08);
+      --shadow-hover: 0 12px 28px rgba(43, 36, 32, 0.16);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ---------- Header ---------- */
+    header {
+      padding: 14px 6%;
+      text-align: center;
+      background: rgba(251, 247, 240, 0.92);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header a {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+    header a span { color: var(--gold); }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 30px 6% 60px;
+    }
+
+    /* On the welcome screen, hide header/footer and let the hero fill the page */
+    body.on-welcome header,
+    body.on-welcome footer { display: none; }
+    body.on-welcome main { max-width: none; padding: 0; }
+
+    h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); text-align: center; }
+    .sub { text-align: center; color: var(--muted); margin: 6px 0 28px; }
+
+    /* ---------- How screens switch ---------- */
+    .screen { display: none; }
+    .screen.active { display: block; animation: fadeUp 0.45s ease both; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- WELCOME SCREEN ---------- */
+    .welcome {
+      position: relative;
+      min-height: 100vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 8%;
+      color: #fff;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(242, 184, 75, 0.35), transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(255, 255, 255, 0.12), transparent 45%),
+        linear-gradient(160deg, #1f6f5c 0%, #155244 60%, #0e3a30 100%);
+    }
+    .welcome.active { display: flex; }
+
+    .welcome-inner { position: relative; z-index: 2; max-width: 560px; }
+
+    .welcome .kicker {
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+    .welcome h1 {
+      font-size: clamp(2.6rem, 11vw, 4.6rem);
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+    .welcome .meaning {
+      font-style: italic;
+      opacity: 0.85;
+      margin-bottom: 22px;
+    }
+    .welcome p.lead {
+      font-size: 1.15rem;
+      opacity: 0.95;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: inline-block;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 1.05rem;
+      padding: 15px 34px;
+      border-radius: 999px;
+      background: var(--gold);
+      color: #3a2a05;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn:hover, .btn:focus-visible {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+      outline: 3px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .welcome .chips {
+      margin-top: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+    }
+    .welcome .chips span {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+
+    /* Floating food emojis in the background */
+    .float {
+      position: absolute;
+      font-size: 2.4rem;
+      opacity: 0.22;
+      z-index: 1;
+      animation: bob 6s ease-in-out infinite;
+      user-select: none;
+    }
+    .float:nth-child(1) { top: 8%;  left: 8%;  animation-delay: 0s; }
+    .float:nth-child(2) { top: 18%; right: 10%; animation-delay: 1s; font-size: 3rem; }
+    .float:nth-child(3) { top: 55%; left: 6%;  animation-delay: 2s; font-size: 3rem; }
+    .float:nth-child(4) { bottom: 12%; right: 8%; animation-delay: 3s; }
+    .float:nth-child(5) { bottom: 6%; left: 40%; animation-delay: 1.5s; }
+    .float:nth-child(6) { top: 6%; left: 55%; animation-delay: 2.5s; }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-16px) rotate(6deg); }
+    }
+
+    /* ---------- Home banner ---------- */
+    .banner {
+      background: linear-gradient(135deg, var(--accent-soft), #fff4d9);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px 20px;
+      text-align: center;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow);
+    }
+    .banner .greeting {
+      font-family: Arial, sans-serif;
+      font-size: 0.9rem;
+      color: var(--accent-dark);
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .banner h1 { margin-bottom: 4px; }
+    .banner .sub { margin: 0; }
+
+    /* ---------- Big tappable tiles ---------- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 18px;
+    }
+
+    .tile {
+      display: block;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .tile:hover, .tile:focus-visible {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--accent);
+      outline: 3px solid #9fd3c4;
+    }
+    .tile:hover .pic > span, .tile:focus-visible .pic > span { transform: scale(1.15) rotate(-4deg); }
+
+    /* Staggered entrance for tiles */
+    .screen.active .tile { animation: fadeUp 0.5s ease both; }
+    .screen.active .tile:nth-child(1) { animation-delay: 0.05s; }
+    .screen.active .tile:nth-child(2) { animation-delay: 0.12s; }
+    .screen.active .tile:nth-child(3) { animation-delay: 0.19s; }
+    .screen.active .tile:nth-child(4) { animation-delay: 0.26s; }
+
+    .pic {
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      background: var(--tile);
+    }
+    .pic > span { display: inline-block; transition: transform 0.25s ease; }
+
+    /* Makes a custom photo fill the picture box */
+    .pic img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Category colours */
+    .pic.c-heavy  { background: linear-gradient(135deg, #ffd9b8, #ffb988); }
+    .pic.c-drinks { background: linear-gradient(135deg, #d6ecff, #a9d3f7); }
+    .pic.c-snacks { background: linear-gradient(135deg, #fff0b3, #ffd966); }
+    .pic.c-home   { background: linear-gradient(135deg, #d9f2d2, #a9dc9c); }
+
+    .tile-text { padding: 14px; }
+    .tile-text h3 { font-size: 1.15rem; }
+    .tile-text .hint {
+      font-family: Arial, sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .price {
+      font-family: Arial, sans-serif;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ---------- Back link ---------- */
+    .back {
+      display: inline-block;
+      margin-bottom: 18px;
+      font-family: Arial, sans-serif;
+      font-size: 0.95rem;
+      color: var(--accent);
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      transition: background 0.2s ease;
+    }
+    .back:hover { background: #cfe8df; }
+
+    h2 { font-size: 1.7rem; margin-bottom: 18px; }
+
+    /* ---------- Location screen ---------- */
+    .detail {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 560px;
+      box-shadow: var(--shadow);
+    }
+    .detail .pic { height: 180px; font-size: 5rem; }
+    .detail-body { padding: 20px; }
+    .detail-body h2 { margin-bottom: 4px; }
+
+    .price-badge {
+      display: inline-block;
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-dark);
+      background: var(--accent-soft);
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    .label {
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+    .value { font-size: 1.05rem; }
+
+    .map {
+      margin-top: 18px;
+      height: 160px;
+      border: 2px dashed var(--line);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      color: var(--muted);
+      background: #f4efe6;
+    }
+
+    footer {
+      padding: 22px 6%;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body class="on-welcome">
+
+  <header><a href="#home">Hapag<span>.</span></a></header>
+
+  <main>
+
+    <!-- =========== WELCOME SCREEN (shown first) =========== -->
+    <section class="screen welcome active" id="welcome">
+      <span class="float">🍛</span>
+      <span class="float">🧋</span>
+      <span class="float">🍕</span>
+      <span class="float">🍲</span>
+      <span class="float">🍟</span>
+      <span class="float">☕</span>
+      
+      <div class="welcome-inner">
+        <p class="kicker">Welcome!</p>
+        <h1>Welcome to TapinacCravings</h1>
+    <p class="meaning"> Are you a Student or just a regular customer? 
+        </p>
+        <p class="lead">Find the best meals, drinks, and meryenda at East Tapinac. Grab your seat and find your best spot to eat and rest.</p>
+        <a class="btn" href="#home">Start exploring →</a>
+        <div class="chips">
+          <span>🍛 Heavy meals</span>
+          <span>🧋 Drinks</span>
+          <span>🍟 Snacks</span>
+          <span>🍲 Home cooked</span>
+          <span>🍢 Street Foods</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========== LOCATION SCREENS (one per place) =========== -->
+    <section class="screen" id="p1">
+      <a class="back" href="#heavy">← Back to Heavy meals</a>
+      <div class="detail">
+        <div class="pic c-heavy"><span>🍛</span></div>
+        <div class="detail-body">
+          <h2>Kusina ni Lola</h2>
+          <span class="price-badge">₱150 – ₱250</span>
+          <p class="label">Location</p>
+          <p class="value">📍 123 Sample Street, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 10:00 AM – 9:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p2">
+      <a class="back" href="#heavy">← Back to Heavy meals</a>
+      <div class="detail">
+        <div class="pic c-heavy"><span>🍖</span></div>
+        <div class="detail-body">
+          <h2>Grill House</h2>
+          <span class="price-badge">₱200 – ₱350</span>
+          <p class="label">Location</p>
+          <p class="value">📍 45 Sample Avenue, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 11:00 AM – 10:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p3">
+      <a class="back" href="#drinks">← Back to Drinks</a>
+      <div class="detail">
+        <div class="pic c-drinks"><span>☕</span></div>
+        <div class="detail-body">
+          <h2>Brew &amp; Bean</h2>
+          <span class="price-badge">₱80 – ₱160</span>
+          <p class="label">Location</p>
+          <p class="value">📍 8 Sample Road, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 8:00 AM – 8:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p4">
+      <a class="back" href="#drinks">← Back to Drinks</a>
+      <div class="detail">
+        <div class="pic c-drinks"><span>🧋</span></div>
+        <div class="detail-body">
+          <h2>Tea Corner</h2>
+          <span class="price-badge">₱60 – ₱120</span>
+          <p class="label">Location</p>
+          <p class="value">📍 22 Sample Lane, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 9:00 AM – 9:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p5">
+      <a class="back" href="#snacks">← Back to Snacks</a>
+      <div class="detail">
+        <div class="pic c-snacks"><span>🍟</span></div>
+        <div class="detail-body">
+          <h2>Meryenda Hub</h2>
+          <span class="price-badge">₱30 – ₱90</span>
+          <p class="label">Location</p>
+          <p class="value">📍 5 Sample Plaza, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 2:00 PM – 8:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p6">
+      <a class="back" href="#snacks">← Back to Snacks</a>
+      <div class="detail">
+        <div class="pic c-snacks"><span>🍢</span></div>
+        <div class="detail-body">
+          <h2>Street Bites</h2>
+          <span class="price-badge">₱25 – ₱70</span>
+          <p class="label">Location</p>
+          <p class="value">📍 Corner of Sample St. and Example Ave.</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 3:00 PM – 11:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p7">
+      <a class="back" href="#homecooked">← Back to Home cooked dishes</a>
+      <div class="detail">
+        <div class="pic c-home"><span>🍲</span></div>
+        <div class="detail-body">
+          <h2>Nanay's Kitchen</h2>
+          <span class="price-badge">₱100 – ₱180</span>
+          <p class="label">Location</p>
+          <p class="value">📍 17 Sample Street, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 7:00 AM – 7:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="p8">
+      <a class="back" href="#homecooked">← Back to Home cooked dishes</a>
+      <div class="detail">
+        <div class="pic c-home"><span>🍚</span></div>
+        <div class="detail-body">
+          <h2>Ate Mila's Carinderia</h2>
+          <span class="price-badge">₱70 – ₱150</span>
+          <p class="label">Location</p>
+          <p class="value">📍 9 Sample Alley, Your Barangay, Your City</p>
+          <p class="label">Open</p>
+          <p class="value">🕒 6:00 AM – 6:00 PM</p>
+          <div class="map">Map goes here</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========== PLACE LIST SCREENS (one per category) =========== -->
+    <section class="screen" id="heavy">
+      <a class="back" href="#home">← Back to categories</a>
+      <h2>🍛 Heavy meals</h2>
+      <div class="grid">
+        <a class="tile" href="#p1">
+          <!-- To use your own photo, put Place-holder.jpg next to this file.
+               If it's missing, the emoji shows instead. -->
+          <div class="pic c-heavy"><img src="Place-holder.jpg" alt="Kusina ni Lola" onerror="this.parentNode.innerHTML='<span>🍛</span>'"></div>
+          <div class="tile-text"><h3>Kusina ni Lola</h3><p class="price">₱150 – ₱250</p></div>
+        </a>
+        <a class="tile" href="#p2">
+          <div class="pic c-heavy"><span>🍖</span></div>
+          <div class="tile-text"><h3>Grill House</h3><p class="price">₱200 – ₱350</p></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="screen" id="drinks">
+      <a class="back" href="#home">← Back to categories</a>
+      <h2>🧋 Drinks</h2>
+      <div class="grid">
+        <a class="tile" href="#p3">
+          <div class="pic c-drinks"><span>☕</span></div>
+          <div class="tile-text"><h3>Brew &amp; Bean</h3><p class="price">₱80 – ₱160</p></div>
+        </a>
+        <a class="tile" href="#p4">
+          <div class="pic c-drinks"><span>🧋</span></div>
+          <div class="tile-text"><h3>Tea Corner</h3><p class="price">₱60 – ₱120</p></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="screen" id="snacks">
+      <a class="back" href="#home">← Back to categories</a>
+      <h2>🍟 Snacks</h2>
+      <div class="grid">
+        <a class="tile" href="#p5">
+          <div class="pic c-snacks"><span>🍟</span></div>
+          <div class="tile-text"><h3>Meryenda Hub</h3><p class="price">₱30 – ₱90</p></div>
+        </a>
+        <a class="tile" href="#p6">
+          <div class="pic c-snacks"><span>🍢</span></div>
+          <div class="tile-text"><h3>Street Bites</h3><p class="price">₱25 – ₱70</p></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="screen" id="homecooked">
+      <a class="back" href="#home">← Back to categories</a>
+      <h2>🍲 Home cooked dishes</h2>
+      <div class="grid">
+        <a class="tile" href="#p7">
+          <div class="pic c-home"><span>🍲</span></div>
+          <div class="tile-text"><h3>Nanay's Kitchen</h3><p class="price">₱100 – ₱180</p></div>
+        </a>
+        <a class="tile" href="#p8">
+          <div class="pic c-home"><span>🍚</span></div>
+          <div class="tile-text"><h3>Ate Mila's Carinderia</h3><p class="price">₱70 – ₱150</p></div>
+        </a>
+      </div>
+    </section>
+
+    <!-- =========== HOME SCREEN (categories) =========== -->
+    <section class="screen" id="home">
+      <div class="banner">
+        <p class="greeting" id="greeting">Kumusta!</p>
+        <h1>What are you craving?</h1>
+        <p class="sub">Pick a category to see places near you.</p>
+      </div>
+      <div class="grid">
+        <a class="tile" href="#heavy">
+          <div class="pic c-heavy"><span>🍛</span></div>
+          <div class="tile-text"><h3>Heavy meals</h3><p class="hint">2 places</p></div>
+        </a>
+        <a class="tile" href="#drinks">
+          <div class="pic c-drinks"><span>🧋</span></div>
+          <div class="tile-text"><h3>Drinks</h3><p class="hint">2 places</p></div>
+        </a>
+        <a class="tile" href="#snacks">
+          <div class="pic c-snacks"><span>🍟</span></div>
+          <div class="tile-text"><h3>Snacks</h3><p class="hint">2 places</p></div>
+        </a>
+        <a class="tile" href="#homecooked">
+          <div class="pic c-home"><span>🍲</span></div>
+          <div class="tile-text"><h3>Home cooked dishes</h3><p class="hint">2 places</p></div>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>© 2026 Hapag Food Finder</footer>
+
+  <script>
+    // Shows one screen and hides the rest
+    function showScreen(id) {
+      var target = document.getElementById(id);
+      if (!target || !target.classList.contains("screen")) { id = "welcome"; }
+      document.querySelectorAll(".screen").forEach(function (s) {
+        s.classList.remove("active");
+      });
+      document.getElementById(id).classList.add("active");
+      document.body.classList.toggle("on-welcome", id === "welcome");
+      window.scrollTo(0, 0);
+    }
+
+    // Every link that starts with # switches screens when clicked
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        showScreen(link.getAttribute("href").slice(1));
+      });
+    });
+
+    // Friendly greeting based on the time of day
+    (function () {
+      var h = new Date().getHours();
+      var msg = h < 11 ? "Magandang umaga! ☀️ Umagahan ba hanap mo?"
+              : h < 14 ? "Magandang tanghali! 🍚? Tanghalian ba hanap mo?"
+              : h < 18 ? "Magandang hapon! 🍟 Meryenda time?"
+              :          "Magandang gabi! 🌙 Gabihan ba hanap mo?";
+      document.getElementById("greeting").textContent = msg;
+    })();
+  </script>
+
+</body>
+</html>
