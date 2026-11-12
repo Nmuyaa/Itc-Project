@@ -612,4 +612,51 @@ body { padding-bottom: 80px; }
         <a class="tile" href="#homecooked">
           <div class="pic c-home"><span>🍲</span></div>
           <div class="tile-text"><h3>Home cooked dishes</h3><p class="hint">2 places</p></div>
-        <
+                </a>
+      </div>
+    </section>
+
+  </main>
+
+
+
+  <footer>© 2026 Hapag Food Finder</footer>
+
+<a class="home-fab" href="#welcone">🏠 Back</a>
+
+  <script>
+    // Shows one screen and hides the rest
+    function showScreen(id) {
+      var target = document.getElementById(id);
+      if (!target || !target.classList.contains("screen")) { id = "welcome"; }
+      document.querySelectorAll(".screen").forEach(function (s) {
+        s.classList.remove("active");
+      });
+      document.getElementById(id).classList.add("active");
+     document.body.classList.toggle("started", id === "home");
+      document.body.classList.toggle("on-welcome", id === "welcome");
+      window.scrollTo(0, 0);
+    }
+
+    // Every link that starts with # switches screens when clicked
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        showScreen(link.getAttribute("href").slice(1));
+      });
+    });
+
+    // Friendly greeting based on the time of day
+    (function () {
+      var h = new Date().getHours();
+      var msg = h < 11 ? "Magandang umaga! ☀️ Umagahan ba hanap mo?"
+              : h < 14 ? "Magandang tanghali! 🍚? Tanghalian ba hanap mo?"
+              : h < 18 ? "Magandang hapon! 🍟 Meryenda time?"
+              :          "Magandang gabi! 🌙 Gabihan ba hanap mo?";
+      document.getElementById("greeting").textContent = msg;
+    })();
+  </script>
+
+</body>
+</html>
+
